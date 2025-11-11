@@ -7,12 +7,15 @@
 struct fila_t *fila_cria (){
     
     struct fila_t *L = malloc (sizeof (struct fila_t));
-    if (L == NULL)
+
+    // alocação deu errado
+    if (!L)
         return NULL;
+
     L->prim = NULL;
-    L->fim = NULL;
+    L->ult = NULL;
     L->num = 0;
-    return L;
+    return L; // alocação deu certo
 
 }
 
@@ -32,31 +35,72 @@ struct fila_t *fila_destroi (struct fila_t *f){
     }
 
     if (ptr == NULL) /*lista vazia*/ 
-        free (*lista);
+        free (f);
     
-    *lista = NULL;
+    f = NULL;
 
+    return NULL;
 }
 
-// Insere o item na fila
-// Inserir duas vezes o mesmo item (o mesmo ponteiro) é um erro.
-// Retorno: número de itens na fila após a operação ou -1 se erro.
-int fila_insere (struct fila_t *f, void *item) {
+// Insere um item no final da fila (politica FIFO).
+// Retorno: 1 se tiver sucesso ou 0 se falhar.
+int fila_insere (struct fila_t *f, int item){
+   
+    struct fila_nodo_t *novo = malloc (sizeof (struct fila_nodo_t));
+    
+    // se a alocação der errado retorna 0
+    if (!novo)
+        return 0;
 
+    novo->item = item;
+    novo->prox = f->prim;
+    f->prim = novo;
+
+    return 1; //alocação deu certo
 }
 
 // Retira o primeiro item da fila e o devolve
-// Retorno: ponteiro para o item retirado ou NULL se fila vazia ou erro.
-void *fila_retira (struct fila_t *f) {
+// Retorno 1 se a operação foi bem sucedida e 0 caso contrário
+int fila_retira (struct fila_t *f, int *item){
+    struct fila_nodo_t *aux = f->prim->prox;
 
+    if (f->prim == NULL) // erro se lista vazia
+        return 0;
+    
+    *item = f->prim->item;
+    free (f->prim->item);
+    free (f->prim);
+    f->prim = aux;
+    return 1;
 }
 
 // Informa o número de itens na fila.
 // Retorno: N >= 0 ou -1 se erro.
 int fila_tamanho (struct fila_t *f) {
+
+    // se a lista for vazia retorna 0
+    if (f->prim == NULL)
+        return 0;
+
+    struct fila_nodo_t *ptr = f->prim;
+    int count = 1;
+
+    while (ptr->prox != NULL){
+        count++;
+        ptr = ptr->prox;
+    }
+
+    return count;
 }
 
 // Imprime o conteúdo da fila 
 void fila_imprime (struct fila_t *f) {
+    
+    struct fila_nodo_t *ptr = f->prim;
 
+    while (ptr != NULL) {
+        printf ("%2d ", ptr->item);
+        ptr = ptr->prox;
+    }
+        
 }

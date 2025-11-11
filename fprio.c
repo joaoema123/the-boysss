@@ -98,7 +98,7 @@ int fprio_insere (struct fprio_t *f, void *item, int tipo, int prio){
 
     // se o fim da lista mudar, arruma o ponteiro f->fim
     while (atual->prox != NULL) 
-        atual = atual->prox; //estou aqui
+        atual = atual->prox; 
     f->fim = atual; 
 
     return count + 1;
