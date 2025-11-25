@@ -3,104 +3,81 @@
 #include "fila.h"
 
 // Cria uma fila vazia.
-// Retorno: ponteiro para a fila criada ou NULL se erro.
-struct fila_t *fila_cria (){
-    
-    struct fila_t *L = malloc (sizeof (struct fila_t));
+struct fila_t *fila_cria() {
+    struct fila_t *f = malloc(sizeof(struct fila_t));
+    if (!f) return NULL;
 
-    // alocação deu errado
-    if (!L)
-        return NULL;
-
-    L->prim = NULL;
-    L->ult = NULL;
-    L->num = 0;
-    return L; // alocação deu certo
-
+    f->prim = NULL;
+    f->ult = NULL;
+    f->num = 0;
+    return f;
 }
 
-// Libera todas as estruturas de dados da fila, inclusive os itens.
-// Retorno: NULL.
-struct fila_t *fila_destroi (struct fila_t *f){
+// Destroi a fila e os nodos.
+struct fila_t *fila_destroi(struct fila_t *f) {
+    if (!f) return NULL;
 
-    struct fila_t *temp = f;
-    struct fila_nodo_t  *ptr = temp->prim;
-
-    while (ptr != NULL)
-    {
-        ptr = ptr->prox;
-        free (temp->prim->item);
-        free (temp->prim);
-        temp->prim = ptr;
+    struct fila_nodo_t *p = f->prim;
+    while (p != NULL) {
+        struct fila_nodo_t *prox = p->prox;
+        free(p);    // item é int, não é ponteiro -> não dar free(p->item)
+        p = prox;
     }
 
-    if (ptr == NULL) /*lista vazia*/ 
-        free (f);
-    
-    f = NULL;
-
+    free(f);
     return NULL;
 }
 
-// Insere um item no final da fila (politica FIFO).
-// Retorno: 1 se tiver sucesso ou 0 se falhar.
-int fila_insere (struct fila_t *f, int item){
-   
-    struct fila_nodo_t *novo = malloc (sizeof (struct fila_nodo_t));
-    
-    // se a alocação der errado retorna 0
-    if (!novo)
-        return 0;
+// Insere no final da fila (FIFO)
+int fila_insere(struct fila_t *f, int item) {
+
+    struct fila_nodo_t *novo = malloc(sizeof(struct fila_nodo_t));
+    if (!novo) return 0;
 
     novo->item = item;
-    novo->prox = f->prim;
-    f->prim = novo;
+    novo->prox = NULL;
 
-    return 1; //alocação deu certo
-}
+    if (f->ult == NULL) {   // fila vazia
+        f->prim = novo;
+        f->ult = novo;
+    } else {
+        f->ult->prox = novo;
+        f->ult = novo;
+    }
 
-// Retira o primeiro item da fila e o devolve
-// Retorno 1 se a operação foi bem sucedida e 0 caso contrário
-int fila_retira (struct fila_t *f, int *item){
-    struct fila_nodo_t *aux = f->prim->prox;
-
-    if (f->prim == NULL) // erro se lista vazia
-        return 0;
-    
-    *item = f->prim->item;
-    free (f->prim->item);
-    free (f->prim);
-    f->prim = aux;
+    f->num++;
     return 1;
 }
 
-// Informa o número de itens na fila.
-// Retorno: N >= 0 ou -1 se erro.
-int fila_tamanho (struct fila_t *f) {
+// Retira do início da fila (FIFO)
+int fila_retira(struct fila_t *f, int *item) {
 
-    // se a lista for vazia retorna 0
-    if (f->prim == NULL)
+    if (f->prim == NULL)  // fila vazia
         return 0;
 
-    struct fila_nodo_t *ptr = f->prim;
-    int count = 1;
+    struct fila_nodo_t *p = f->prim;
+    *item = p->item;
 
-    while (ptr->prox != NULL){
-        count++;
-        ptr = ptr->prox;
-    }
+    f->prim = p->prox;
 
-    return count;
+    if (f->prim == NULL)
+        f->ult = NULL;
+
+    free(p);
+    f->num--;
+    return 1;
 }
 
-// Imprime o conteúdo da fila 
-void fila_imprime (struct fila_t *f) {
-    
-    struct fila_nodo_t *ptr = f->prim;
+// Retorna o número de itens
+int fila_tamanho(struct fila_t *f) {
+    if (!f) return -1;
+    return f->num;
+}
 
-    while (ptr != NULL) {
-        printf ("%2d ", ptr->item);
-        ptr = ptr->prox;
+void fila_imprime(struct fila_t *f) {
+    struct fila_nodo_t *p = f->prim;
+    while (p != NULL) {
+        printf("%d ", p->item);
+        p = p->prox;
     }
-        
 }
