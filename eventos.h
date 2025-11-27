@@ -22,6 +22,7 @@ struct heroi
   int velocidade; // velocidade de deslocamento do herói
   int experiencia; // número de missões que o heróis já participou
   int base; //ID da base onde o herói se encontra
+  int status; // status = -1- > herói morto //status = 0 ->herói vivo
 } ;
 
 struct base
@@ -79,9 +80,9 @@ void processa_sai (struct evento *ev, struct heroi *herois, struct base *bases, 
 
 void processa_viaja (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF);
 
-void morre (int t, int h, int b);
+void processa_morre (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF);
 
-void missao (int t, struct missao m);
+void processa_missao (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF, struct mundo *m, struct missao *ms);
 
 void fim (int t);
 

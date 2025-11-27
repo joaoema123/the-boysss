@@ -21,8 +21,14 @@ struct evento *evento_cria (int tipo, int tempo, int id_heroi, int id_missao, in
 }
 
 void processa_espera (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF) {
-    
+
     int h = ev->id_heroi;
+
+    int vida = herois [h].status;
+
+    if (vida == -1) 
+        return;
+
     int b = ev->id_base;
     int tempo = ev->tempo;
 
@@ -38,6 +44,12 @@ void processa_espera (struct evento *ev, struct heroi *herois, struct base *base
 void processa_desiste (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF, struct mundo *m) {
 
     int h = ev->id_heroi;
+
+    int vida = herois [h].status;
+
+    if (vida == -1) 
+        return;
+
     int b = ev->id_base;
     int tempo = ev->tempo;
     int N_BASES = m->NBases;
@@ -55,10 +67,16 @@ void processa_desiste (struct evento *ev, struct heroi *herois, struct base *bas
 
 void processa_chega (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF) {
     
+    int h = ev->id_heroi;
+
+    int vida = herois [h].status;
+
+    if (vida == -1) 
+        return;
+
     bool espera;
 
     // pega as informações do evento chega
-    int h = ev->id_heroi;
     int b = ev->id_base;
     int tempo = ev->tempo;
 
@@ -90,8 +108,14 @@ void processa_chega (struct evento *ev, struct heroi *herois, struct base *bases
 
 void processa_avisa (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF) {
 
-    // heroi h que chegou na base b no instante tempo
     int h = ev->id_heroi;
+
+    int vida = herois [h].status;
+
+    if (vida == -1) 
+        return;
+
+    // heroi h que chegou na base b no instante tempo
     int b = ev->id_base;
     int tempo = ev->tempo;
 
@@ -115,6 +139,12 @@ void processa_avisa (struct evento *ev, struct heroi *herois, struct base *bases
 void processa_entra (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF) {
 
     int h = ev->id_heroi;
+
+    int vida = herois [h].status;
+
+    if (vida == -1) 
+        return;
+
     int b = ev->id_base;
     int tempo = ev->tempo;
 
@@ -130,6 +160,12 @@ void processa_entra (struct evento *ev, struct heroi *herois, struct base *bases
 void processa_sai (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF, struct mundo *m) {
 
     int h = ev->id_heroi;
+
+    int vida = herois [h].status;
+
+    if (vida == -1) 
+        return;
+
     int b = ev->id_base;
     int tempo = ev->tempo;
 
@@ -150,7 +186,14 @@ void processa_sai (struct evento *ev, struct heroi *herois, struct base *bases, 
 
 void processa_viaja (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF) {
     
+
     int h = ev->id_heroi;
+
+    int vida = herois [h].status;
+
+    if (vida == -1) 
+        return;
+
     int b = herois [h].base; // base de que o herói saiu
     int D = ev->id_base; // base em que o herói vai chegar
     int tempo = ev->tempo;
@@ -175,8 +218,114 @@ void processa_viaja (struct evento *ev, struct heroi *herois, struct base *bases
     fprio_insere (LEF, novo, CHEGA, tempo + duracao);
 
     return;
+}
 
+void processa_morre (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF) {
 
+    int h = ev->id_heroi;
+    int b = ev->id_base; 
+    int tempo = ev->tempo;
+
+    // retira o herói h da base b
+    cjto_retira (bases [b].presentes, h);
+
+    herois [h].status = -1;
+
+    struct evento *novo = evento_cria (AVISA, tempo, -1, -1, b);
+
+    fprio_insere (LEF, novo, AVISA, tempo);
 
 }
+
+// função que verifica se determinada base consegue resolver uma missao ms
+bool base_consegue_resolver (struct base b, struct missao ms) {
+
+}
+
+void processa_missao (struct evento *ev, struct heroi *herois, struct base *bases, struct fprio_t *LEF, struct mundo *m, struct missao *ms) {
+
+    int base_menor_d; //base com menor distância da função
+
+    int id_missao = ev->id_missao;
+
+    int tempo = ev->tempo;
+
+    int menor = 1000000;
+
+    int b = -1;
+
+    for (int i = 0; i < m->NBases; i++) {
+        
+        // variação das coordenadas de x
+        int dist_x = bases [i].localizacao [0] - ms [id_missao].localizacao [0];
+        dist_x = dist_x * dist_x;
+
+        // variação das coordenadas de y
+        int dist_y = bases [i].localizacao [1] - ms [id_missao].localizacao [1];
+        dist_y = dist_y * dist_y;
+
+        // distância cartesiana entra a base B e a base D
+        int distancia = (int) sqrt (dist_x + dist_y);
+        
+        //encontra a base com menor distância
+        if (distancia < menor) {
+            base_menor_d = i;
+            menor = distancia;
+        }
+
+        // encontra a base com menor distância que tem todas habilidades para resolver a missão
+        if (distancia < menor && base_consegue_resolver (bases [i], ms [id_missao])) {
+            b = i;
+        }
+    }
+   
+    // se b = -1 não existe base que possa resolver a missao
+    if (b == -1) {
+        
+        // verifica se existe compostosV e se o tempo é múltiplo de 2500
+        if (m->NCompostosV > 0 && (tempo % 2500 == 0)){
+        
+            //decrementa o número de compostosV no mundo
+            m->NCompostosV--;
+            fprio_retira (LEF, ev, &tempo); //marca  a missão como concluída
+        
+            // descobre qual é o herói mais experiente da base
+            int maior = 0;
+            for (int j = 0; j < m->NHerois; j++){
+                if (cjto_pertence (bases [base_menor_d].presentes, j)) {
+                    if (herois [j].experiencia > maior)
+                        maior = herois [j].experiencia;
+                }
+            }
+            struct evento *novo = evento_cria (MORRE, tempo, maior, id_missao, base_menor_d);
+            fprio_insere (LEF, novo, MORRE, tempo);
+            
+            // incrementa a experiência dos demais heróis
+            for (int j = 0; j < m->NHerois; j++){
+                if (cjto_pertence (bases [base_menor_d].presentes, j)) {
+                    herois [j].experiencia++;
+                }
+            }
+        
+            return;
+        }
+
+        struct evento *novo = evento_cria (MISSAO, tempo + 24*60, -1, id_missao, -1);
+        fprio_insere (LEF, novo, MISSAO, tempo + 24*60);
+        return;
+
+    }
+    
+    fprio_retira (LEF, ev, &tempo); //marca  a missão como concluída
+    
+    // incrementa a experiência dos demais heróis
+    for (int k = 0; k < m->NHerois; k++){
+        if (cjto_pertence (bases [b].presentes, k)) {
+            herois [k].experiencia++;
+        }
+    }
+    return;
+}
+        
+
 
